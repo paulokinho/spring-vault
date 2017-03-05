@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package org.springframework.vault.util;
 
-import java.util.Collections;
-
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.vault.core.VaultOperations;
 import org.springframework.vault.core.VaultSysOperations;
+import org.springframework.vault.support.VaultHealth;
 import org.springframework.vault.support.VaultInitializationRequest;
 import org.springframework.vault.support.VaultInitializationResponse;
 import org.springframework.vault.support.VaultMount;
@@ -27,20 +27,26 @@ import org.springframework.vault.support.VaultToken;
 import org.springframework.vault.support.VaultTokenRequest;
 import org.springframework.vault.support.VaultTokenResponse;
 import org.springframework.vault.support.VaultUnsealStatus;
+import org.springframework.vault.support.VaultTokenRequest.VaultTokenRequestBuilder;
+import org.springframework.web.client.RestTemplate;
 
 /**
- * Vault preparation utility class. This class allows preparing Vault for integration tests.
- * 
+ * Vault preparation utility class. This class allows preparing Vault for integration
+ * tests.
+ *
  * @author Mark Paluch
  */
 public class PrepareVault {
+
+	private final RestTemplate restTemplate;
 
 	private final VaultOperations vaultOperations;
 
 	private final VaultSysOperations adminOperations;
 
-	public PrepareVault(VaultOperations vaultOperations) {
+	public PrepareVault(RestTemplate restTemplate, VaultOperations vaultOperations) {
 
+		this.restTemplate = restTemplate;
 		this.vaultOperations = vaultOperations;
 		this.adminOperations = vaultOperations.opsForSys();
 	}
@@ -55,19 +61,20 @@ public class PrepareVault {
 		int createKeys = 2;
 		int requiredKeys = 2;
 
-		VaultInitializationResponse initialized = vaultOperations.opsForSys()
-				.initialize(new VaultInitializationRequest(createKeys, requiredKeys));
+		VaultInitializationResponse initialized = vaultOperations.opsForSys().initialize(
+				VaultInitializationRequest.create(createKeys, requiredKeys));
 
 		for (int i = 0; i < requiredKeys; i++) {
 
-			VaultUnsealStatus unsealStatus = vaultOperations.opsForSys().unseal(initialized.getKeys().get(i));
+			VaultUnsealStatus unsealStatus = vaultOperations.opsForSys().unseal(
+					initialized.getKeys().get(i));
 
 			if (!unsealStatus.isSealed()) {
 				break;
 			}
 		}
 
-		return VaultToken.of(initialized.getRootToken());
+		return initialized.getRootToken();
 	}
 
 	/**
@@ -79,14 +86,14 @@ public class PrepareVault {
 	 */
 	public VaultToken createToken(String tokenId, String policy) {
 
-		VaultTokenRequest tokenRequest = new VaultTokenRequest();
+		VaultTokenRequestBuilder builder = VaultTokenRequest.builder().id(tokenId);
 
-		tokenRequest.setId(tokenId);
-		if (policy != null) {
-			tokenRequest.setPolicies(Collections.singletonList(policy));
+		if (StringUtils.hasText(policy)) {
+			builder.withPolicy(policy);
 		}
 
-		VaultTokenResponse vaultTokenResponse = vaultOperations.opsForToken().create(tokenRequest);
+		VaultTokenResponse vaultTokenResponse = vaultOperations.opsForToken().create(
+				builder.build());
 		return vaultTokenResponse.getToken();
 	}
 
@@ -145,10 +152,37 @@ public class PrepareVault {
 	public boolean hasSecret(String secretBackend) {
 
 		Assert.hasText(secretBackend, "SecretBackend must not be empty");
-		return adminOperations.getMounts().containsKey(secretBackend);
+		return adminOperations.getMounts().containsKey(secretBackend + "/");
+	}
+
+	/**
+	 * @return Vault version from the health check. Versions beginning from Vault 0.6.2
+	 * will expose a version number.
+	 */
+	public Version getVersion() {
+
+		VaultHealth health = getVaultOperations().opsForSys().health();
+
+		if (StringUtils.hasText(health.getVersion())) {
+
+			String version = health.getVersion();
+
+			// Migration code for Vault 0.6.1
+			if (version.startsWith("Vault v")) {
+				version = version.substring(7);
+			}
+
+			return Version.parse(version);
+		}
+
+		return Version.parse("0.0.0");
 	}
 
 	public VaultOperations getVaultOperations() {
 		return vaultOperations;
+	}
+
+	public RestTemplate getRestTemplate() {
+		return restTemplate;
 	}
 }

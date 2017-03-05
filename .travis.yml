@@ -2,20 +2,35 @@ language: java
 
 jdk:
   - oraclejdk8
+  
+sudo: false
+
+addons:
+  apt:
+    sources:
+      - debian-sid
+    packages:
+      - libssl1.0.0
 
 env:
   matrix:
     - VAULT_VER=0.5.2
     - VAULT_VER=0.6.0
     - VAULT_VER=0.6.1
+    - VAULT_VER=0.6.2
+    - VAULT_VER=0.6.3
+    - VAULT_VER=0.6.4
+    - VAULT_VER=0.6.5
+    - PROFILE=springNext
+    - PROFILE=spring5
+
+before_install:
+  - sed -i.bak -e 's|https://nexus.codehaus.org/snapshots/|https://oss.sonatype.org/content/repositories/codehaus-snapshots/|g' ~/.m2/settings.xml
 
 install:
-  - mkdir -p download
-  - src/test/bash/create_certificates.sh
-  - src/test/bash/install_vault.sh
-  - src/test/bash/local_run_vault.sh &
+  - src/test/bash/start.sh
 
-script: mvn clean verify
+script: mvn clean verify -P${PROFILE:-ci}
 
 after_script:
   - pkill vault

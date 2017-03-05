@@ -17,15 +17,15 @@ package org.springframework.vault.support;
 
 import java.util.Map;
 
-import org.springframework.util.Assert;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.springframework.util.Assert;
 
 /**
  * Value object to bind Vault HTTP Mount API requests/responses.
  * <p>
- * A {@link VaultMount} represents an auth or secret mount with its config details. Instances of this class are
- * immutable once constructed.
+ * A {@link VaultMount} represents an auth or secret mount with its config details.
+ * Instances of this class are immutable once constructed.
  *
  * @author Mark Paluch
  * @see #builder()
@@ -47,7 +47,8 @@ public class VaultMount {
 	 */
 	private final Map<String, Object> config;
 
-	private VaultMount(@JsonProperty("type") String type, @JsonProperty("description") String description,
+	private VaultMount(@JsonProperty("type") String type,
+			@JsonProperty("description") String description,
 			@JsonProperty("config") Map<String, Object> config) {
 		this.type = type;
 		this.description = description;
@@ -58,6 +59,7 @@ public class VaultMount {
 	 * Creates a new {@link VaultMount} given a {@code type}.
 	 *
 	 * @param type backend type, must not be empty or {@literal null}.
+	 * @return the created {@link VaultMount}.
 	 */
 	public static VaultMount create(String type) {
 		return builder().type(type).build();
@@ -102,7 +104,8 @@ public class VaultMount {
 
 		private Map<String, Object> config;
 
-		VaultMountBuilder() {}
+		VaultMountBuilder() {
+		}
 
 		/**
 		 * Configure the backend type.
@@ -110,7 +113,7 @@ public class VaultMount {
 		 * @param type the backend type, must not be empty or {@literal null}.
 		 * @return {@literal this} {@link VaultMountBuilder}.
 		 */
-		public VaultMount.VaultMountBuilder type(String type) {
+		public VaultMountBuilder type(String type) {
 
 			Assert.hasText(type, "Type must not be empty or null");
 
@@ -124,7 +127,7 @@ public class VaultMount {
 		 * @param description a human readable description of this mount.
 		 * @return {@literal this} {@link VaultMountBuilder}.
 		 */
-		public VaultMount.VaultMountBuilder description(String description) {
+		public VaultMountBuilder description(String description) {
 			this.description = description;
 			return this;
 		}
@@ -135,13 +138,14 @@ public class VaultMount {
 		 * @param config additional configuration details for this mount.
 		 * @return {@literal this} {@link VaultMountBuilder}.
 		 */
-		public VaultMount.VaultMountBuilder config(Map<String, Object> config) {
+		public VaultMountBuilder config(Map<String, Object> config) {
 			this.config = config;
 			return this;
 		}
 
 		/**
-		 * Builds a new {@link VaultMount} instance. Requires {@link #type(String)} to be configured.
+		 * Build a new {@link VaultMount} instance. Requires {@link #type(String)} to be
+		 * configured.
 		 *
 		 * @return a new {@link VaultMount}.
 		 */

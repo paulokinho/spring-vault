@@ -1,15 +1,27 @@
 [[preface]]
 = Preface
 
-The Spring Vault project applies core Spring concepts to the development of solutions using Hashicorp Vault. We provide a "template" as a high-level abstraction for storing and querying documents. You will notice similarities to the REST support in the Spring Framework.
+The Spring Vault project applies core Spring concepts to the development of solutions using HashiCorp Vault. We provide a "template" as a high-level abstraction for storing and querying documents. You will notice similarities to the REST support in the Spring Framework.
 
 This document is the reference guide for Spring Vault. It explains Vault concepts and semantics and the syntax.
 
-This section provides some basic introduction to Spring and Vault. The rest of the document refers only to Spring Vault features and assumes the user is familiar with Hashicorp Vault as well as Spring concepts.
+This part of the reference documentation explains the core functionality offered by Spring Vault.
+
+<<vault.core>> introduces the Vault module feature set.
+
+== Document Structure
+
+This section provides basic introduction to Spring and Vault.
+It contains details about following development and how to get support.
+
+The rest of the document refers to Spring Vault features and assumes
+the user is familiar with https://www.vaultproject.io[HashiCorp Vault]
+as well as Spring concepts.
 
 [[get-started:first-steps:spring]]
 == Knowing Spring
-Spring Vault uses Spring framework's http://docs.spring.io/spring/docs/4.2.x/spring-framework-reference/html/spring-core.html[core] functionality, such as the http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/beans.html[IoC] container, http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/validation.html#core-convert[type conversion system], http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/expressions.html[expression language], http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/jmx.html[JMX integration], and portable http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/dao.html#dao-exceptions[DAO exception hierarchy]. While it is not important to know the Spring APIs, understanding the concepts behind them is. At a minimum, the idea behind IoC should be familiar for whatever IoC container you choose to use.
+
+Spring Vault uses Spring framework's http://docs.spring.io/spring/docs/4.2.x/spring-framework-reference/html/spring-core.html[core] functionality, such as the http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/beans.html[IoC] container. While it is not important to know the Spring APIs, understanding the concepts behind them is. At a minimum, the idea behind IoC should be familiar for whatever IoC container you choose to use.
 
 The core functionality of the Vault support can be used directly, with no need to invoke the IoC services of the Spring Container. This is much like `RestTemplate` which can be used 'standalone' without any other services of the Spring container. To leverage all the features of Spring Vault document, such as the session support, you will need to configure some parts of the library using Spring.
 
@@ -20,20 +32,27 @@ To learn more about Spring, you can refer to the comprehensive (and sometimes di
 
 Security and working with secrets is a concern of every developer working with databases, user credentials or API keys. Vault steps in by providing a secure storage combined with access control, revocation, key rolling and auditing. In short: Vault is a service for securely accessing and storing  secrets. A secret is anything that you want to tightly control access to, such as API keys, passwords, certificates, and more.
 
-The jumping off ground for learning about Vault is www.vaultproject.io. Here is a list of useful resources:
+The jumping off ground for learning about Vault is https://www.vaultproject.io[www.vaultproject.io]. Here is a list of useful resources:
 
 * The manual introduces Vault and contains links to getting started guides, reference documentation and tutorials.
 
 * The online shell provides a convenient way to interact with a Vault instance in combination with the online tutorial.
 
-* https://www.vaultproject.io/intro/index.html[Hashicorp Vault Introduction]
+* https://www.vaultproject.io/intro/index.html[HashiCorp Vault Introduction]
 
-* https://www.vaultproject.io/docs/index.html[Hashicorp Vault Documentation]
+* https://www.vaultproject.io/docs/index.html[HashiCorp Vault Documentation]
+
+Spring Vault provides client-side support for accessing, storing and revoking secrets.
+With https://www.vaultproject.io[HashiCorp's Vault] you have a central place to
+manage external secret data for applications across all environments.
+Vault can manage static and dynamic secrets such as application data,
+username/password for remote applications/resources and provide credentials
+for external services such as MySQL, PostgreSQL, Apache Cassandra, Consul, AWS and more.
 
 [[requirements]]
 == Requirements
 
-Spring Vault 1.x binaries requires JDK level 6.0 and above, and http://spring.io/docs[Spring Framework] {springVersion} and above.
+Spring Vault 1.x binaries requires JDK level 6.0 and above, and http://spring.io/docs[Spring Framework] {springVersion} and above. While we maintain Java 6 compatibility, new projects should consider using Java 8  .
 
 In terms of Vault, https://www.vaultproject.io/[Vault] at least 0.5.
 
@@ -49,7 +68,7 @@ There are a few support options available:
 [[get-started:help:community]]
 ==== Community Forum
 
-Spring Vault on Stackoverflow http://stackoverflow.com/questions/tagged/spring-vault[Stackoverflow] is a tag for all Spring Vault users to share information and help each other. Note that registration is needed *only* for posting.
+Post questions questions regarding Spring Vault on http://stackoverflow.com/questions/tagged/spring-vault[Stackoverflow] to share information and help each other. Note that registration is needed *only* for posting.
 
 [[get-started:help:professional]]
 ==== Professional Support

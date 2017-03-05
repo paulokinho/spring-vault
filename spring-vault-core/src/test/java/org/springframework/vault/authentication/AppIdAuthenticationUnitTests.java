@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,69 +15,78 @@
  */
 package org.springframework.vault.authentication;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
-
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.vault.client.VaultClient;
-import org.springframework.vault.client.VaultEndpoint;
-import org.springframework.vault.client.VaultException;
+import org.springframework.vault.VaultException;
+import org.springframework.vault.client.VaultClients;
+import org.springframework.vault.client.VaultClients.PrefixAwareUriTemplateHandler;
 import org.springframework.vault.support.VaultToken;
 import org.springframework.web.client.RestTemplate;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
 /**
  * Unit tests for {@link AppIdAuthentication}.
- * 
+ *
  * @author Mark Paluch
  */
 public class AppIdAuthenticationUnitTests {
 
-	private VaultClient vaultClient;
+	private RestTemplate restTemplate;
 	private MockRestServiceServer mockRest;
 
 	@Before
 	public void before() throws Exception {
 
-		RestTemplate restTemplate = new RestTemplate();
-		mockRest = MockRestServiceServer.createServer(restTemplate);
-		vaultClient = new VaultClient(restTemplate, new VaultEndpoint());
+		RestTemplate restTemplate = VaultClients.createRestTemplate();
+		restTemplate.setUriTemplateHandler(new PrefixAwareUriTemplateHandler());
+		this.mockRest = MockRestServiceServer.createServer(restTemplate);
+		this.restTemplate = restTemplate;
 	}
 
 	@Test
 	public void loginShouldObtainTokenWithStaticUserId() throws Exception {
 
-		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder().appId("hello") //
+		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder()
+				.appId("hello") //
 				.userIdMechanism(new StaticUserId("world")) //
 				.build();
 
-		mockRest.expect(requestTo("https://localhost:8200/v1/auth/app-id/login")) //
-				.andExpect(method(HttpMethod.POST)) //
-				.andExpect(jsonPath("$.app_id").value("hello")) //
-				.andExpect(jsonPath("$.user_id").value("world")) //
+		mockRest.expect(requestTo("/auth/app-id/login"))
+				.andExpect(method(HttpMethod.POST))
+				.andExpect(jsonPath("$.app_id").value("hello"))
+				.andExpect(jsonPath("$.user_id").value("world"))
 				.andRespond(withSuccess().contentType(MediaType.APPLICATION_JSON)
 						.body("{" + "\"auth\":{\"client_token\":\"my-token\"}" + "}"));
 
-		AppIdAuthentication authentication = new AppIdAuthentication(options, vaultClient);
+		AppIdAuthentication authentication = new AppIdAuthentication(options,
+				restTemplate);
 
 		VaultToken login = authentication.login();
+		assertThat(login).isInstanceOf(LoginToken.class);
 		assertThat(login.getToken()).isEqualTo("my-token");
 	}
 
 	@Test(expected = VaultException.class)
 	public void loginShouldFail() throws Exception {
 
-		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder().appId("hello") //
+		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder()
+				.appId("hello") //
 				.userIdMechanism(new StaticUserId("world")) //
 				.build();
 
-		mockRest.expect(requestTo("https://localhost:8200/v1/auth/app-id/login")) //
+		mockRest.expect(requestTo("/auth/app-id/login")) //
 				.andRespond(withServerError());
 
-		new AppIdAuthentication(options, vaultClient).login();
+		new AppIdAuthentication(options, restTemplate).login();
 	}
 }

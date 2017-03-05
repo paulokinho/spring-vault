@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package org.springframework.vault.authentication;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.vault.util.Settings.*;
-
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.Collections;
@@ -26,26 +23,33 @@ import java.util.Map;
 import org.assertj.core.util.Files;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.core.NestedRuntimeException;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.vault.client.VaultClient;
-import org.springframework.vault.client.VaultEndpoint;
+import org.springframework.vault.client.VaultClients;
 import org.springframework.vault.config.ClientHttpRequestFactoryFactory;
-import org.springframework.vault.core.VaultOperations;
+import org.springframework.vault.core.RestOperationsCallback;
 import org.springframework.vault.support.ClientOptions;
 import org.springframework.vault.support.SslConfiguration;
 import org.springframework.vault.support.VaultToken;
 import org.springframework.vault.util.IntegrationTestSupport;
 import org.springframework.vault.util.Settings;
+import org.springframework.vault.util.TestRestTemplateFactory;
+import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.vault.util.Settings.createSslConfiguration;
+import static org.springframework.vault.util.Settings.findWorkDir;
 
 /**
  * Integration tests for {@link ClientCertificateAuthentication}.
- * 
+ *
  * @author Mark Paluch
  */
-public class ClientCertificateAuthenticationIntegrationTests extends IntegrationTestSupport {
+public class ClientCertificateAuthenticationIntegrationTests extends
+		IntegrationTestSupport {
 
 	@Before
 	public void before() throws Exception {
@@ -54,54 +58,57 @@ public class ClientCertificateAuthenticationIntegrationTests extends Integration
 			prepare().mountAuth("cert");
 		}
 
-		prepare().getVaultOperations().doWithVault(new VaultOperations.SessionCallback<Object>() {
-			@Override
-			public Object doWithVault(VaultOperations.VaultSession session) {
+		prepare().getVaultOperations().doWithSession(
+				new RestOperationsCallback<Object>() {
+					@Override
+					public Object doWithRestOperations(RestOperations restOperations) {
+						File workDir = findWorkDir();
 
-				File workDir = findWorkDir();
+						String certificate = Files.contentOf(new File(workDir,
+								"ca/certs/client.cert.pem"), Charset.forName("US-ASCII"));
 
-				String certificate = Files.contentOf(new File(workDir, "ca/certs/client.cert.pem"),
-						Charset.forName("US-ASCII"));
-
-				session.postForEntity("auth/cert/certs/my-role", Collections.singletonMap("certificate", certificate),
-						Map.class);
-
-				return null;
-			}
-		});
+						return restOperations.postForEntity("auth/cert/certs/my-role",
+								Collections.singletonMap("certificate", certificate),
+								Map.class);
+					}
+				});
 	}
 
 	@Test
 	public void shouldLoginSuccessfully() throws Exception {
 
-		ClientHttpRequestFactory clientHttpRequestFactory = ClientHttpRequestFactoryFactory.create(new ClientOptions(),
-				prepareCertAuthenticationMethod());
-		VaultClient vaultClient = new VaultClient(new RestTemplate(clientHttpRequestFactory), new VaultEndpoint());
+		ClientHttpRequestFactory clientHttpRequestFactory = ClientHttpRequestFactoryFactory
+				.create(new ClientOptions(), prepareCertAuthenticationMethod());
 
-		ClientCertificateAuthentication authentication = new ClientCertificateAuthentication(vaultClient);
+		RestTemplate restTemplate = VaultClients.createRestTemplate(
+				TestRestTemplateFactory.TEST_VAULT_ENDPOINT, clientHttpRequestFactory);
+		ClientCertificateAuthentication authentication = new ClientCertificateAuthentication(
+				restTemplate);
 		VaultToken login = authentication.login();
 
 		assertThat(login.getToken()).isNotEmpty();
 	}
 
-	// Compatibility for Vault 0.6.0 and below. Vault 0.6.1 fixed that issue and we receive a VaultException here.
+	// Compatibility for Vault 0.6.0 and below. Vault 0.6.1 fixed that issue and we
+	// receive a VaultException here.
 	@Test(expected = NestedRuntimeException.class)
 	public void loginShouldFail() throws Exception {
 
-		ClientHttpRequestFactory clientHttpRequestFactory = ClientHttpRequestFactoryFactory.create(new ClientOptions(),
-				Settings.createSslConfiguration());
-		VaultClient vaultClient = new VaultClient(new RestTemplate(clientHttpRequestFactory), new VaultEndpoint());
+		ClientHttpRequestFactory clientHttpRequestFactory = ClientHttpRequestFactoryFactory
+				.create(new ClientOptions(), Settings.createSslConfiguration());
+		RestTemplate restTemplate = VaultClients.createRestTemplate(
+				TestRestTemplateFactory.TEST_VAULT_ENDPOINT, clientHttpRequestFactory);
 
-		new ClientCertificateAuthentication(vaultClient).login();
+		new ClientCertificateAuthentication(restTemplate).login();
 	}
 
 	private SslConfiguration prepareCertAuthenticationMethod() {
 
 		SslConfiguration original = createSslConfiguration();
 
-		SslConfiguration sslConfiguration = new SslConfiguration(
-				new FileSystemResource(new File(findWorkDir(), "client-cert.jks")), "changeit", original.getTrustStore(),
-				original.getTrustStorePassword());
+		SslConfiguration sslConfiguration = new SslConfiguration(new FileSystemResource(
+				new File(findWorkDir(), "client-cert.jks")), "changeit",
+				original.getTrustStore(), original.getTrustStorePassword());
 
 		return sslConfiguration;
 	}

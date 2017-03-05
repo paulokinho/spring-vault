@@ -16,29 +16,9 @@
 package org.springframework.vault.support;
 
 /**
- * Transit backend encryption/decryption/rewrapping request options.
- *
+ * Value object to bind Vault HTTP PKI issue certificate API responses.
+ * 
  * @author Mark Paluch
  */
-public class VaultTransitRequest {
-
-	private byte[] context;
-
-	private byte[] nonce;
-
-	public byte[] getContext() {
-		return context;
-	}
-
-	public void setContext(byte[] context) {
-		this.context = context;
-	}
-
-	public byte[] getNonce() {
-		return nonce;
-	}
-
-	public void setNonce(byte[] nonce) {
-		this.nonce = nonce;
-	}
+public class VaultCertificateResponse extends VaultResponseSupport<CertificateBundle> {
 }

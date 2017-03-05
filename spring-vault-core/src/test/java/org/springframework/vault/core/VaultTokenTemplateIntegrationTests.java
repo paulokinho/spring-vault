@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,41 @@
  */
 package org.springframework.vault.core;
 
-import static org.assertj.core.api.Assertions.*;
-
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.vault.client.VaultClient;
-import org.springframework.vault.client.VaultException;
-import org.springframework.vault.client.VaultResponseEntity;
+import org.springframework.vault.VaultException;
+import org.springframework.vault.client.VaultHttpHeaders;
 import org.springframework.vault.support.VaultTokenRequest;
 import org.springframework.vault.support.VaultTokenResponse;
 import org.springframework.vault.util.IntegrationTestSupport;
+import org.springframework.web.client.RestOperations;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for {@link VaultTokenTemplate} through {@link VaultTokenOperations}.
- * 
+ *
  * @author Mark Paluch
  */
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = VaultIntegrationTestConfiguration.class)
 public class VaultTokenTemplateIntegrationTests extends IntegrationTestSupport {
 
-	@Autowired private VaultOperations vaultOperations;
+	@Autowired
+	private VaultOperations vaultOperations;
 	private VaultTokenOperations tokenOperations;
 
 	@Before
@@ -60,17 +67,21 @@ public class VaultTokenTemplateIntegrationTests extends IntegrationTestSupport {
 	@Test
 	public void createTokenShouldCreateACustomizedToken() {
 
-		VaultTokenRequest tokenRequest = new VaultTokenRequest();
-		tokenRequest.setDisplayName("display");
-		tokenRequest.setExplicitMaxTtl("1h");
-		tokenRequest.setTtl("30m");
-		tokenRequest.setPolicies(Collections.singletonList("root"));
-		tokenRequest.setNumUses(2);
-		tokenRequest.setRenewable(true);
-		tokenRequest.setId("HELLO-WORLD");
+		VaultTokenRequest tokenRequest = VaultTokenRequest.builder()
+				.displayName("display") //
+				.explicitMaxTtl(TimeUnit.HOURS.toSeconds(10)) //
+				.ttl(30 * 60) //
+				.policies(Collections.singleton("root")) //
+				.numUses(2) //
+				.renewable() //
+				.noDefaultPolicy() //
+				.noParent() //
+				.id("HELLO-WORLD") //
+				.build();
 
 		VaultTokenResponse tokenResponse = tokenOperations.create(tokenRequest);
-		assertThat(tokenResponse.getAuth()).containsEntry("client_token", tokenRequest.getId());
+		assertThat(tokenResponse.getAuth()).containsEntry("client_token",
+				tokenRequest.getId());
 	}
 
 	@Test
@@ -83,26 +94,31 @@ public class VaultTokenTemplateIntegrationTests extends IntegrationTestSupport {
 	@Test
 	public void createOrphanTokenShouldCreateACustomizedToken() {
 
-		VaultTokenRequest tokenRequest = new VaultTokenRequest();
-		tokenRequest.setDisplayName("display");
-		tokenRequest.setExplicitMaxTtl("1h");
-		tokenRequest.setTtl("30m");
-		tokenRequest.setPolicies(Collections.singletonList("root"));
-		tokenRequest.setNumUses(2);
-		tokenRequest.setRenewable(true);
-		tokenRequest.setId("HELLO-WORLD");
+		VaultTokenRequest tokenRequest = VaultTokenRequest.builder()
+				.displayName("display") //
+				.explicitMaxTtl(TimeUnit.HOURS.toSeconds(10)) //
+				.ttl(30 * 60) //
+				.policies(Collections.singleton("root")) //
+				.numUses(2) //
+				.renewable() //
+				.noDefaultPolicy() //
+				.noParent() //
+				.id("HELLO-WORLD") //
+				.build();
 
 		VaultTokenResponse tokenResponse = tokenOperations.createOrphan(tokenRequest);
-		assertThat(tokenResponse.getAuth()).containsEntry("client_token", tokenRequest.getId());
+		assertThat(tokenResponse.getAuth()).containsEntry("client_token",
+				tokenRequest.getId());
 	}
 
 	@Test
 	public void renewShouldRenewToken() {
 
-		VaultTokenRequest tokenRequest = new VaultTokenRequest();
-		tokenRequest.setDisplayName("display");
-		tokenRequest.setExplicitMaxTtl("1h");
-		tokenRequest.setTtl("30m");
+		VaultTokenRequest tokenRequest = VaultTokenRequest.builder()
+				.explicitMaxTtl(TimeUnit.HOURS.toSeconds(10)) //
+				.ttl(30 * 60) //
+				.renewable() //
+				.build();
 
 		VaultTokenResponse tokenResponse = tokenOperations.create(tokenRequest);
 		VaultTokenResponse renew = tokenOperations.renew(tokenResponse.getToken());
@@ -125,11 +141,12 @@ public class VaultTokenTemplateIntegrationTests extends IntegrationTestSupport {
 		final VaultTokenResponse tokenResponse = tokenOperations.create();
 		tokenOperations.revoke(tokenResponse.getToken());
 
-		VaultResponseEntity<String> response = lookupSelf(tokenResponse);
-
-		assertThat(response.getStatusCode()).isIn(/* <= Vault 0.6.0 */ HttpStatus.BAD_REQUEST,
-				/* >= Vault 0.6.1 */ HttpStatus.FORBIDDEN);
-		assertThat(response.getMessage()).isEqualTo("permission denied");
+		try {
+			lookupSelf(tokenResponse);
+		}
+		catch (VaultException e) {
+			assertThat(e).hasMessageContaining("permission denied");
+		}
 	}
 
 	@Test
@@ -137,18 +154,28 @@ public class VaultTokenTemplateIntegrationTests extends IntegrationTestSupport {
 
 		final VaultTokenResponse tokenResponse = tokenOperations.create();
 
-		VaultResponseEntity<String> response = lookupSelf(tokenResponse);
+		ResponseEntity<String> response = lookupSelf(tokenResponse);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 	}
 
-	private VaultResponseEntity<String> lookupSelf(final VaultTokenResponse tokenResponse) {
+	private ResponseEntity<String> lookupSelf(final VaultTokenResponse tokenResponse) {
 
-		return vaultOperations.doWithVault(new VaultOperations.ClientCallback<VaultResponseEntity<String>>() {
-			@Override
-			public VaultResponseEntity<String> doWithVault(VaultClient client) {
-				return client.getForEntity("/auth/token/lookup-self", tokenResponse.getToken(), String.class);
-			}
-		});
+		return vaultOperations
+				.doWithVault(new RestOperationsCallback<ResponseEntity<String>>() {
+					@Override
+					public ResponseEntity<String> doWithRestOperations(
+							RestOperations restOperations) {
+						HttpHeaders headers = new HttpHeaders();
+						headers.add(VaultHttpHeaders.VAULT_TOKEN, tokenResponse
+								.getToken()
+								.getToken());
+
+						return restOperations.exchange("auth/token/lookup-self",
+								HttpMethod.GET, new HttpEntity<Object>(headers),
+								String.class);
+					}
+				});
+
 	}
 }

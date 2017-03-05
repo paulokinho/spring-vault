@@ -17,82 +17,46 @@ package org.springframework.vault.support;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
- * Value object to bind Vault HTTP Transit Key API responses.
+ * A key inside Vault's {@code transit} backend.
  *
  * @author Mark Paluch
  */
-public class VaultTransitKey {
+public interface VaultTransitKey {
 
-	@JsonProperty("cipher_mode") private String cipherMode;
+	/**
+	 * @return {@literal true} if deletion of the key is allowed. Key deletion must be
+	 * turned on to make keys deletable.
+	 */
+	boolean isDeletionAllowed();
 
-	@JsonProperty("deletion_allowed") private boolean deletionAllowed;
+	/**
+	 * @return {@literal true} if if key derivation MUST be used.
+	 */
+	boolean isDerived();
 
-	private boolean derived;
+	/**
+	 * @return a {@link Map} of key version to its creation timestamp.
+	 */
+	Map<String, Long> getKeys();
 
-	private Map<String, Long> keys;
+	/**
+	 * @return {@literal true} if the key represents the latest version.
+	 */
+	boolean isLatestVersion();
 
-	@JsonProperty("latest_version") private boolean latestVersion;
+	/**
+	 * @return required key version to still be able to decrypt data.
+	 */
+	int getMinDecryptionVersion();
 
-	@JsonProperty("min_decryption_version") private int minDecryptionVersion;
+	/**
+	 * @return name of the key
+	 */
+	String getName();
 
-	private String name;
-
-	public String getCipherMode() {
-		return cipherMode;
-	}
-
-	public void setCipherMode(String cipherMode) {
-		this.cipherMode = cipherMode;
-	}
-
-	public boolean isDeletionAllowed() {
-		return deletionAllowed;
-	}
-
-	public void setDeletionAllowed(boolean deletionAllowed) {
-		this.deletionAllowed = deletionAllowed;
-	}
-
-	public boolean isDerived() {
-		return derived;
-	}
-
-	public void setDerived(boolean derived) {
-		this.derived = derived;
-	}
-
-	public Map<String, Long> getKeys() {
-		return keys;
-	}
-
-	public void setKeys(Map<String, Long> keys) {
-		this.keys = keys;
-	}
-
-	public boolean isLatestVersion() {
-		return latestVersion;
-	}
-
-	public void setLatestVersion(boolean latestVersion) {
-		this.latestVersion = latestVersion;
-	}
-
-	public int getMinDecryptionVersion() {
-		return minDecryptionVersion;
-	}
-
-	public void setMinDecryptionVersion(int minDecryptionVersion) {
-		this.minDecryptionVersion = minDecryptionVersion;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
+	/**
+	 * @return the key type ({@code aes-gcm}, {@code ecdsa-p256}, ...).
+	 */
+	String getType();
 }

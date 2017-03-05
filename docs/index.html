@@ -38,8 +38,11 @@ badges:
 
 {% capture billboard_description %}
 
-Spring Vault provides familiar Spring abstractions and Client support for Spring applications. It offers both low-level and
+Spring Vault provides familiar Spring abstractions and client-side support for accessing, storing and revoking secrets. It offers both low-level and
 high-level abstractions for interacting with Vault, freeing the user from infrastructural concerns.
+
+With [HashiCorp's Vault](https://www.vaultproject.io) you have a central place to manage external secret data for applications across all environments.
+Vault can manage static and dynamic secrets such as application data, username/password for remote applications/resources and provide credentials for external services such as MySQL, PostgreSQL, Apache Cassandra, Consul, AWS and more.
 
 {% endcapture %}
 
@@ -49,6 +52,7 @@ high-level abstractions for interacting with Vault, freeing the user from infras
 
 * Connection package as low-level abstraction
 * Reading, writing and deleting data from Vault with object mapping support
+* Multiple authentication mechanisms: AppId, AppRole, Client Certificates, and Cubbyhole (wrapped/stored token)
 
 <span id="quick-start"></span>
 
@@ -104,9 +108,7 @@ public class Example {
 
 {% capture related_resources %}
 
-
 {% endcapture %}
-
 
 {% include project_page.html %}
 </html>

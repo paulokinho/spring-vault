@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.vault</groupId>
@@ -20,7 +19,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring.version>4.3.2.RELEASE</spring.version>
+		<spring.version>4.3.7.RELEASE</spring.version>
 		<java.version>1.6</java.version>
 		<project.type>multi</project.type>
 		<dist.id>spring-vault</dist.id>
@@ -48,7 +47,7 @@
 
 	<ciManagement>
 		<system>Bamboo</system>
-		<url>https://build.springframework.org/bamboo/browse/SPRVAULT</url>
+		<url>https://build.spring.io/browse/SPRINGVAULT-VAULT</url>
 	</ciManagement>
 
 	<developers>
@@ -96,6 +95,15 @@
 				<type>pom</type>
 			</dependency>
 
+			<!-- Spring Framework -->
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-framework-bom</artifactId>
+				<version>${spring.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
 			<!-- Testing -->
 			<dependency>
 				<groupId>junit</groupId>
@@ -105,9 +113,23 @@
 			</dependency>
 
 			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>2.6.2</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-test</artifactId>
+				<version>${spring.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
 				<groupId>org.assertj</groupId>
 				<artifactId>assertj-core</artifactId>
-				<version>3.5.2</version>
+				<version>3.6.1</version>
 				<scope>test</scope>
 			</dependency>
 
@@ -115,13 +137,6 @@
 				<groupId>com.jayway.jsonpath</groupId>
 				<artifactId>json-path</artifactId>
 				<version>2.2.0</version>
-				<scope>test</scope>
-			</dependency>
-
-			<dependency>
-				<groupId>ch.qos.logback</groupId>
-				<artifactId>logback-classic</artifactId>
-				<version>1.1.7</version>
 				<scope>test</scope>
 			</dependency>
 
@@ -229,6 +244,18 @@
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>2.8.2</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<version>2.10</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-site-plugin</artifactId>
 					<version>3.5.1</version>
 					<dependencies>
@@ -238,6 +265,12 @@
 							<version>1.0</version>
 						</dependency>
 					</dependencies>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>1.6</version>
 				</plugin>
 
 				<plugin>
@@ -277,29 +310,35 @@
 
 	<profiles>
 		<profile>
+
 			<id>springNext</id>
+
+			<properties>
+				<spring.version>4.3.7.BUILD-SNAPSHOT</spring.version>
+			</properties>
+
+			<repositories>
+				<repository>
+					<id>spring-libs-snapshot</id>
+					<url>https://repo.spring.io/libs-snapshot</url>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</repository>
+			</repositories>
+		</profile>
+		<profile>
+
+			<id>spring5</id>
+
 			<properties>
 				<spring.version>5.0.0.BUILD-SNAPSHOT</spring.version>
 			</properties>
-		</profile>
 
-		<profile>
-			<id>bootstrap</id>
 			<repositories>
 				<repository>
-					<id>repo.spring.io-milestone</id>
-					<name>Spring Framework Milestone Repository</name>
-					<url>http://repo.spring.io/libs-milestone-local</url>
-				</repository>
-				<repository>
-					<id>repo.spring.io-release</id>
-					<name>Spring Framework Release Repository</name>
-					<url>http://repo.spring.io/libs-release-local</url>
-				</repository>
-				<repository>
-					<id>repo.spring.io-snapshot</id>
-					<name>Spring Framework Maven Snapshot Repository</name>
-					<url>http://repo.spring.io/libs-snapshot-local</url>
+					<id>spring-libs-snapshot</id>
+					<url>https://repo.spring.io/libs-snapshot</url>
 					<snapshots>
 						<enabled>true</enabled>
 					</snapshots>
@@ -308,7 +347,9 @@
 		</profile>
 
 		<profile>
+
 			<id>milestone</id>
+
 			<distributionManagement>
 				<repository>
 					<id>repo.spring.io</id>
@@ -316,10 +357,13 @@
 					<url>http://repo.spring.io/libs-milestone-local</url>
 				</repository>
 			</distributionManagement>
+
 		</profile>
 
 		<profile>
+
 			<id>central</id>
+
 			<distributionManagement>
 				<snapshotRepository>
 					<id>sonatype-nexus-snapshots</id>
@@ -332,9 +376,12 @@
 					<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 				</repository>
 			</distributionManagement>
+
 			<build>
 				<plugins>
+
 					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
 						<executions>
 							<execution>
@@ -346,8 +393,37 @@
 							</execution>
 						</executions>
 					</plugin>
+
 				</plugins>
 			</build>
+
+		</profile>
+
+		<profile>
+
+			<!-- Profile to be run on the CI server, JARs JavaDocs -->
+
+			<id>ci</id>
+
+			<build>
+				<plugins>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+								<phase>package</phase>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+
 		</profile>
 
 		<profile>
@@ -441,17 +517,17 @@
 									<target>
 										<copy todir="${project.root}/target/site/reference/html">
 											<fileset dir="${shared.resources}/asciidoc" erroronmissingdir="false">
-												<include name="**/*.css"/>
+												<include name="**/*.css" />
 											</fileset>
-											<flattenmapper/>
+											<flattenmapper />
 										</copy>
 										<copy todir="${project.root}/target/site/reference/html/images">
 											<fileset dir="${basedir}/src/main/asciidoc" erroronmissingdir="false">
-												<include name="**/*.png"/>
-												<include name="**/*.gif"/>
-												<include name="**/*.jpg"/>
+												<include name="**/*.png" />
+												<include name="**/*.gif" />
+												<include name="**/*.jpg" />
 											</fileset>
-											<flattenmapper/>
+											<flattenmapper />
 										</copy>
 									</target>
 								</configuration>
@@ -467,9 +543,9 @@
 									<target>
 										<copy todir="${project.build.directory}/schemas">
 											<fileset dir="${basedir}" erroronmissingdir="false">
-												<include name="**/src/main/resources/**/config/spring-*.xsd"/>
+												<include name="**/src/main/resources/**/config/spring-*.xsd" />
 											</fileset>
-											<flattenmapper/>
+											<flattenmapper />
 										</copy>
 									</target>
 								</configuration>
@@ -483,12 +559,8 @@
 								<phase>process-resources</phase>
 								<configuration>
 									<target>
-										<copy failonerror="false"
-											  file="${project.build.directory}/generated-docs/index.pdf"
-											  tofile="${project.root}/target/site/reference/pdf/${dist.id}-reference.pdf"/>
-										<copy failonerror="false"
-											  file="${project.build.directory}/generated-docs/index.epub"
-											  tofile="${project.root}/target/site/reference/epub/${dist.id}-reference.epub"/>
+										<copy failonerror="false" file="${project.build.directory}/generated-docs/index.pdf" tofile="${project.root}/target/site/reference/pdf/${dist.id}-reference.pdf" />
+										<copy failonerror="false" file="${project.build.directory}/generated-docs/index.epub" tofile="${project.root}/target/site/reference/epub/${dist.id}-reference.epub" />
 									</target>
 								</configuration>
 								<goals>
@@ -524,8 +596,7 @@
 								<docfilessubdirs>true</docfilessubdirs>
 								<additionalparam>-Xdoclint:none</additionalparam>
 								<links>
-									<link>http://docs.spring.io/spring/docs/4.2.x/javadoc-api/</link>
-									<link>http://docs.spring.io/spring-data/commons/docs/current/api/</link>
+									<link>http://docs.spring.io/spring/docs/current/javadoc-api/</link>
 									<link>http://docs.oracle.com/javase/6/docs/api</link>
 								</links>
 							</configuration>
@@ -627,7 +698,7 @@
 									<goals>
 										<goal>single</goal>
 									</goals>
-									<phase>package</phase>
+									<phase>prepare-package</phase>
 									<configuration>
 										<descriptors>
 											<descriptor>${shared.resources}/assemblies/static-resources.xml</descriptor>
@@ -636,34 +707,20 @@
 										<appendAssemblyId>false</appendAssemblyId>
 									</configuration>
 								</execution>
-							</executions>
-						</plugin>
-
-						<plugin>
-							<groupId>org.codehaus.mojo</groupId>
-							<artifactId>wagon-maven-plugin</artifactId>
-							<configuration>
-								<fromDir>${project.build.directory}</fromDir>
-							</configuration>
-							<executions>
-
-								<!-- Distribute static resources -->
-
 								<execution>
-									<id>upload-static-resources</id>
-									<phase>deploy</phase>
+									<id>docs</id>
 									<goals>
-										<goal>upload</goal>
+										<goal>single</goal>
 									</goals>
+									<phase>package</phase>
 									<configuration>
-										<fromDir>${project.build.directory}/static-resources</fromDir>
-										<includes>**</includes>
-										<serverId>static-dot-s2</serverId>
-										<url>scp://static.springsource.org</url>
-										<toDir>
-											/var/www/domains/springsource.org/www/htdocs/autorepo/docs/${dist.id}/${project.version}
-										</toDir>
-										<optimize>true</optimize>
+										<descriptors>
+											<descriptor>src/assembly/docs.xml</descriptor>
+										</descriptors>
+										<finalName>spring-vault-${project.version}-docs</finalName>
+										<appendAssemblyId>false</appendAssemblyId>
+										<classifier>docs</classifier>
+										<attach>true</attach>
 									</configuration>
 								</execution>
 							</executions>
@@ -674,12 +731,29 @@
 							<artifactId>maven-deploy-plugin</artifactId>
 							<configuration>
 								<skip>true</skip>
+								<uniqueVersion>false</uniqueVersion>
 							</configuration>
 						</plugin>
-
 					</plugins>
 				</pluginManagement>
 			</build>
+
+			<repositories>
+				<repository>
+					<id>spring-libs-snapshot</id>
+					<url>https://repo.spring.io/libs-snapshot</url>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</repository>
+			</repositories>
+
+			<pluginRepositories>
+				<pluginRepository>
+					<id>spring-plugins-release</id>
+					<url>https://repo.spring.io/plugins-release</url>
+				</pluginRepository>
+			</pluginRepositories>
 		</profile>
 	</profiles>
 </project>

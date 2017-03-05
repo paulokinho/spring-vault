@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,23 @@
  */
 package org.springframework.vault.authentication;
 
-import org.springframework.vault.client.VaultException;
+import org.springframework.vault.VaultException;
 import org.springframework.vault.support.VaultToken;
 
 /**
- * {@link ClientAuthentication} provides {@link VaultToken} to be used for authenticated Vault access. Implementing
- * classes usually use a login method to login and return a {@link VaultToken} when implementing {@link #login()}.
+ * {@link ClientAuthentication} provides {@link VaultToken} to be used for authenticated
+ * Vault access. Implementing classes usually use a login method to login and return a
+ * {@link VaultToken} when implementing {@link #login()}.
  *
  * @author Mark Paluch
  */
 public interface ClientAuthentication {
 
 	/**
-	 * Return a {@link VaultToken}. This method can optionally log into Vault to obtain a {@link VaultToken token}.
+	 * Return a {@link VaultToken}. This method can optionally log into Vault to obtain a
+	 * {@link VaultToken token}.
 	 *
 	 * @return a {@link VaultToken}.
 	 */
-	public VaultToken login() throws VaultException;
+	VaultToken login() throws VaultException;
 }

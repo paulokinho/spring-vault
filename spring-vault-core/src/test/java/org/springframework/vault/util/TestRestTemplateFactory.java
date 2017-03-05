@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,27 +21,32 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.Assert;
+import org.springframework.vault.client.VaultClients;
+import org.springframework.vault.client.VaultEndpoint;
 import org.springframework.vault.config.ClientHttpRequestFactoryFactory;
 import org.springframework.vault.support.ClientOptions;
 import org.springframework.vault.support.SslConfiguration;
-import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Factory for {@link RestTemplate}. The template caches the {@link ClientHttpRequestFactory} once it was initialized.
- * Changes to timeouts or the SSL configuration won't be applied once a {@link ClientHttpRequestFactory} was created for
- * the first time.
- * 
+ * Factory for {@link RestTemplate}. The template caches the
+ * {@link ClientHttpRequestFactory} once it was initialized. Changes to timeouts or the
+ * SSL configuration won't be applied once a {@link ClientHttpRequestFactory} was created
+ * for the first time.
+ *
  * @author Mark Paluch
  */
 public class TestRestTemplateFactory {
 
+	public static final VaultEndpoint TEST_VAULT_ENDPOINT = new VaultEndpoint();
+
 	private static final AtomicReference<ClientHttpRequestFactory> factoryCache = new AtomicReference<ClientHttpRequestFactory>();
 
 	/**
-	 * Create a new {@link RestTemplate} using the {@link SslConfiguration}. The underlying
-	 * {@link ClientHttpRequestFactory} is cached. See {@link #create(ClientHttpRequestFactory)} to create
-	 * {@link RestTemplate} for a given {@link ClientHttpRequestFactory}.
+	 * Create a new {@link RestTemplate} using the {@link SslConfiguration}. The
+	 * underlying {@link ClientHttpRequestFactory} is cached. See
+	 * {@link #create(ClientHttpRequestFactory)} to create {@link RestTemplate} for a
+	 * given {@link ClientHttpRequestFactory}.
 	 *
 	 * @param sslConfiguration must not be {@literal null}.
 	 * @return
@@ -53,15 +58,18 @@ public class TestRestTemplateFactory {
 		try {
 			initializeClientHttpRequestFactory(sslConfiguration);
 			return create(factoryCache.get());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new IllegalStateException(e);
 		}
 	}
 
 	/**
-	 * Create a new {@link RestTemplate} using the {@link ClientHttpRequestFactory}. The {@link RestTemplate} will throw
-	 * {@link org.springframework.web.client.HttpStatusCodeException exceptions} in error cases and behave in that aspect
-	 * like the regular {@link org.springframework.web.client.RestTemplate}.
+	 * Create a new {@link RestTemplate} using the {@link ClientHttpRequestFactory}. The
+	 * {@link RestTemplate} will throw
+	 * {@link org.springframework.web.client.HttpStatusCodeException exceptions} in error
+	 * cases and behave in that aspect like the regular
+	 * {@link org.springframework.web.client.RestTemplate}.
 	 *
 	 * @param requestFactory must not be {@literal null}.
 	 * @return
@@ -70,14 +78,11 @@ public class TestRestTemplateFactory {
 
 		Assert.notNull(requestFactory, "ClientHttpRequestFactory must not be null!");
 
-		RestTemplate RestTemplate = new RestTemplate();
-		RestTemplate.setErrorHandler(new DefaultResponseErrorHandler());
-		RestTemplate.setRequestFactory(requestFactory);
-
-		return RestTemplate;
+		return VaultClients.createRestTemplate(TEST_VAULT_ENDPOINT, requestFactory);
 	}
 
-	private static void initializeClientHttpRequestFactory(SslConfiguration sslConfiguration) throws Exception {
+	private static void initializeClientHttpRequestFactory(
+			SslConfiguration sslConfiguration) throws Exception {
 
 		if (factoryCache.get() != null) {
 			return;
@@ -94,17 +99,19 @@ public class TestRestTemplateFactory {
 
 			if (clientHttpRequestFactory instanceof DisposableBean) {
 
-				Runtime.getRuntime().addShutdownHook(new Thread("ClientHttpRequestFactory Shutdown Hook") {
+				Runtime.getRuntime().addShutdownHook(
+						new Thread("ClientHttpRequestFactory Shutdown Hook") {
 
-					@Override
-					public void run() {
-						try {
-							((DisposableBean) clientHttpRequestFactory).destroy();
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-				});
+							@Override
+							public void run() {
+								try {
+									((DisposableBean) clientHttpRequestFactory).destroy();
+								}
+								catch (Exception e) {
+									e.printStackTrace();
+								}
+							}
+						});
 			}
 		}
 	}

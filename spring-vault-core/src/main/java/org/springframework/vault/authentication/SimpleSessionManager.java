@@ -15,19 +15,20 @@
  */
 package org.springframework.vault.authentication;
 
+import org.springframework.util.Assert;
 import org.springframework.vault.support.VaultToken;
 
 /**
  * Default implementation of {@link SessionManager}.
  * <p>
- * Uses a synchronized login method to log into Vault and reuse the resulting {@link VaultToken} throughout session
- * lifetime.
+ * Uses a synchronized login method to log into Vault and reuse the resulting
+ * {@link VaultToken} throughout session lifetime.
  *
  * @author Mark Paluch
  * @see ClientAuthentication
  * @see VaultToken
  */
-public class DefaultSessionManager implements SessionManager {
+public class SimpleSessionManager implements SessionManager {
 
 	private final ClientAuthentication clientAuthentication;
 
@@ -36,11 +37,14 @@ public class DefaultSessionManager implements SessionManager {
 	private volatile VaultToken token;
 
 	/**
-	 * Creates a new {@link DefaultSessionManager} using a {@link ClientAuthentication}.
+	 * Creates a new {@link SimpleSessionManager} using a {@link ClientAuthentication}.
 	 * 
 	 * @param clientAuthentication must not be {@literal null}.
 	 */
-	public DefaultSessionManager(ClientAuthentication clientAuthentication) {
+	public SimpleSessionManager(ClientAuthentication clientAuthentication) {
+
+		Assert.notNull(clientAuthentication, "ClientAuthentication must not be null");
+
 		this.clientAuthentication = clientAuthentication;
 	}
 

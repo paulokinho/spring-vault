@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,26 @@
  */
 package org.springframework.vault.authentication;
 
-import static org.assertj.core.api.Assertions.*;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.vault.client.VaultClient;
-import org.springframework.vault.client.VaultEndpoint;
-import org.springframework.vault.client.VaultException;
-import org.springframework.vault.core.VaultOperations;
+
+import org.springframework.vault.VaultException;
+import org.springframework.vault.core.RestOperationsCallback;
 import org.springframework.vault.support.VaultToken;
 import org.springframework.vault.util.IntegrationTestSupport;
 import org.springframework.vault.util.Settings;
 import org.springframework.vault.util.TestRestTemplateFactory;
+import org.springframework.web.client.RestOperations;
+import org.springframework.web.client.RestTemplate;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for {@link AppIdAuthentication}.
- * 
+ *
  * @author Mark Paluch
  */
 public class AppIdAuthenticationIntegrationTests extends IntegrationTestSupport {
@@ -45,39 +46,44 @@ public class AppIdAuthenticationIntegrationTests extends IntegrationTestSupport 
 			prepare().mountAuth("app-id");
 		}
 
-		prepare().getVaultOperations().doWithVault(new VaultOperations.SessionCallback<Object>() {
+		prepare().getVaultOperations().doWithSession(
+				new RestOperationsCallback<Object>() {
+					@Override
+					public Object doWithRestOperations(RestOperations restOperations) {
 
-			@Override
-			public Object doWithVault(VaultOperations.VaultSession session) {
+						Map<String, String> appIdData = new HashMap<String, String>();
+						appIdData.put("value", "dummy"); // policy
+						appIdData.put("display_name", "this is my test application");
 
-				Map<String, String> appIdData = new HashMap<String, String>();
-				appIdData.put("value", "dummy"); // policy
-				appIdData.put("display_name", "this is my test application");
+						restOperations.postForEntity("auth/app-id/map/app-id/myapp",
+								appIdData, Map.class);
 
-				session.postForEntity("auth/app-id/map/app-id/myapp", appIdData, Map.class);
+						Map<String, String> userIdData = new HashMap<String, String>();
+						userIdData.put("value", "myapp"); // name of the app-id
+						userIdData.put("cidr_block", "0.0.0.0/0");
 
-				Map<String, String> userIdData = new HashMap<String, String>();
-				userIdData.put("value", "myapp"); // name of the app-id
-				userIdData.put("cidr_block", "0.0.0.0/0");
+						restOperations.postForEntity(
+								"auth/app-id/map/user-id/static-userid-value",
+								userIdData, Map.class);
 
-				session.postForEntity("auth/app-id/map/user-id/static-userid-value", userIdData, Map.class);
-
-				return null;
-			}
-		});
+						return null;
+					}
+				});
 	}
 
 	@Test
 	public void shouldLoginSuccessfully() throws Exception {
 
-		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder().appId("myapp") //
+		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder()
+				.appId("myapp") //
 				.userIdMechanism(new StaticUserId("static-userid-value")) //
 				.build();
 
-		VaultClient vaultClient = new VaultClient(TestRestTemplateFactory.create(Settings.createSslConfiguration()),
-				new VaultEndpoint());
+		RestTemplate restTemplate = TestRestTemplateFactory.create(Settings
+				.createSslConfiguration());
 
-		AppIdAuthentication authentication = new AppIdAuthentication(options, vaultClient);
+		AppIdAuthentication authentication = new AppIdAuthentication(options,
+				restTemplate);
 		VaultToken login = authentication.login();
 
 		assertThat(login.getToken()).isNotEmpty();
@@ -86,13 +92,14 @@ public class AppIdAuthenticationIntegrationTests extends IntegrationTestSupport 
 	@Test(expected = VaultException.class)
 	public void loginShouldFail() throws Exception {
 
-		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder().appId("wrong") //
+		AppIdAuthenticationOptions options = AppIdAuthenticationOptions.builder()
+				.appId("wrong") //
 				.userIdMechanism(new StaticUserId("wrong")) //
 				.build();
 
-		VaultClient vaultClient = new VaultClient(TestRestTemplateFactory.create(Settings.createSslConfiguration()),
-				new VaultEndpoint());
+		RestTemplate restTemplate = TestRestTemplateFactory.create(Settings
+				.createSslConfiguration());
 
-		new AppIdAuthentication(options, vaultClient).login();
+		new AppIdAuthentication(options, restTemplate).login();
 	}
 }

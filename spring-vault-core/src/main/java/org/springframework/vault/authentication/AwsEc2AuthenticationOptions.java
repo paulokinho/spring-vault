@@ -22,9 +22,9 @@ import org.springframework.util.Assert;
 /**
  * Authentication options for {@link AwsEc2Authentication}.
  * <p>
- * Authentication options provide the path, the Identity Document URI and an optional role.
- * {@link AwsEc2AuthenticationOptions} can be constructed using {@link #builder()}. Instances of this class are
- * immutable once constructed.
+ * Authentication options provide the path, the Identity Document URI and an optional
+ * role. {@link AwsEc2AuthenticationOptions} can be constructed using {@link #builder()}.
+ * Instances of this class are immutable once constructed.
  *
  * @author Mark Paluch
  * @see AwsEc2Authentication
@@ -38,7 +38,8 @@ public class AwsEc2AuthenticationOptions {
 	public final static String DEFAULT_AWS_AUTHENTICATION_PATH = "aws-ec2";
 
 	/**
-	 * Default {@link AwsEc2AuthenticationOptions} using {@link #DEFAULT_AWS_AUTHENTICATION_PATH} and
+	 * Default {@link AwsEc2AuthenticationOptions} using
+	 * {@link #DEFAULT_AWS_AUTHENTICATION_PATH} and
 	 * {@link #DEFAULT_PKCS7_IDENTITY_DOCUMENT_URI}.
 	 */
 	public final static AwsEc2AuthenticationOptions DEFAULT = new AwsEc2AuthenticationOptions();
@@ -97,16 +98,20 @@ public class AwsEc2AuthenticationOptions {
 		return role;
 	}
 
+	/**
+	 * Builder for {@link AwsEc2AuthenticationOptionsBuilder}.
+	 */
 	public static class AwsEc2AuthenticationOptionsBuilder {
 
 		private String path = DEFAULT_AWS_AUTHENTICATION_PATH;
 		private URI identityDocumentUri = DEFAULT_PKCS7_IDENTITY_DOCUMENT_URI;
 		private String role;
 
-		AwsEc2AuthenticationOptionsBuilder() {}
+		AwsEc2AuthenticationOptionsBuilder() {
+		}
 
 		/**
-		 * Configures the mount path.
+		 * Configure the mount path.
 		 *
 		 * @param path must not be empty or {@literal null}.
 		 * @return {@code this} {@link AwsEc2AuthenticationOptionsBuilder}.
@@ -120,21 +125,23 @@ public class AwsEc2AuthenticationOptions {
 		}
 
 		/**
-		 * Configures the Identity Document {@link URI}.
+		 * Configure the Identity Document {@link URI}.
 		 *
 		 * @param identityDocumentUri must not be empty or {@literal null}.
 		 * @return {@code this} {@link AwsEc2AuthenticationOptionsBuilder}.
 		 * @see #DEFAULT_PKCS7_IDENTITY_DOCUMENT_URI
 		 */
-		public AwsEc2AuthenticationOptionsBuilder identityDocumentUri(URI identityDocumentUri) {
+		public AwsEc2AuthenticationOptionsBuilder identityDocumentUri(
+				URI identityDocumentUri) {
 
 			this.identityDocumentUri = identityDocumentUri;
 			return this;
 		}
 
 		/**
-		 * Configures the name of the role against which the login is being attempted.If role is not specified, then the
-		 * login endpoint looks for a role bearing the name of the AMI ID of the EC2 instance that is trying to login.
+		 * Configure the name of the role against which the login is being attempted.If
+		 * role is not specified, then the login endpoint looks for a role bearing the
+		 * name of the AMI ID of the EC2 instance that is trying to login.
 		 * 
 		 * @param role may be empty or {@literal null}.
 		 * @return {@code this} {@link AwsEc2AuthenticationOptionsBuilder}.
@@ -146,13 +153,12 @@ public class AwsEc2AuthenticationOptions {
 		}
 
 		/**
-		 * Builds a new {@link AwsEc2AuthenticationOptions} instance.
+		 * Build a new {@link AwsEc2AuthenticationOptions} instance.
 		 *
 		 * @return a new {@link AppIdAuthenticationOptions}.
 		 */
 		public AwsEc2AuthenticationOptions build() {
 
-			Assert.hasText(path, "AppId must not be empty");
 			Assert.notNull(identityDocumentUri, "IdentityDocumentUri must not be null");
 
 			return new AwsEc2AuthenticationOptions(path, identityDocumentUri, role);

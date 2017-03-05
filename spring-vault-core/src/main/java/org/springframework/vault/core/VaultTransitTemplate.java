@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,22 @@
  */
 package org.springframework.vault.core;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 import org.springframework.util.Assert;
 import org.springframework.util.Base64Utils;
-import org.springframework.vault.support.VaultTransitKeyConfiguration;
+import org.springframework.vault.support.VaultResponse;
 import org.springframework.vault.support.VaultResponseSupport;
+import org.springframework.vault.support.VaultTransitContext;
 import org.springframework.vault.support.VaultTransitKey;
+import org.springframework.vault.support.VaultTransitKeyConfiguration;
 import org.springframework.vault.support.VaultTransitKeyCreationRequest;
-import org.springframework.vault.support.VaultTransitRequest;
 
 /**
  * Default implementation of {@link VaultTransitOperations}.
@@ -47,7 +53,7 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 	}
 
 	@Override
-	public void createKey(final String keyName) {
+	public void createKey(String keyName) {
 
 		Assert.hasText(keyName, "KeyName must not be empty");
 
@@ -55,30 +61,43 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 	}
 
 	@Override
-	public void createKey(final String keyName, final VaultTransitKeyCreationRequest createKeyRequest) {
+	public void createKey(String keyName, VaultTransitKeyCreationRequest createKeyRequest) {
 
 		Assert.hasText(keyName, "KeyName must not be empty");
-		Assert.notNull(createKeyRequest, "VaultTransitKeyCreationRequest must not be empty");
+		Assert.notNull(createKeyRequest,
+				"VaultTransitKeyCreationRequest must not be empty");
 
-		vaultOperations.write(String.format("%s/keys/%s", path, keyName), createKeyRequest);
+		vaultOperations.write(String.format("%s/keys/%s", path, keyName),
+				createKeyRequest);
 	}
 
 	@Override
-	public void configureKey(final String keyName, final VaultTransitKeyConfiguration keyConfiguration) {
+	public List<String> getKeys() {
+
+		VaultResponse response = vaultOperations.read(String.format("%s/keys?list=true",
+				path));
+
+		return response == null ? Collections.emptyList() : (List) response.getData()
+				.get("keys");
+	}
+
+	@Override
+	public void configureKey(String keyName, VaultTransitKeyConfiguration keyConfiguration) {
 
 		Assert.hasText(keyName, "KeyName must not be empty");
 		Assert.notNull(keyConfiguration, "VaultKeyConfiguration must not be empty");
 
-		vaultOperations.write(String.format("%s/keys/%s/config", path, keyName), keyConfiguration);
+		vaultOperations.write(String.format("%s/keys/%s/config", path, keyName),
+				keyConfiguration);
 	}
 
 	@Override
-	public VaultTransitKey getKey(final String keyName) {
+	public VaultTransitKey getKey(String keyName) {
 
 		Assert.hasText(keyName, "KeyName must not be empty");
 
-		VaultResponseSupport<VaultTransitKey> result = vaultOperations.read(String.format("%s/keys/%s", path, keyName),
-				VaultTransitKey.class);
+		VaultResponseSupport<VaultTransitKeyImpl> result = vaultOperations.read(
+				String.format("%s/keys/%s", path, keyName), VaultTransitKeyImpl.class);
 
 		if (result != null) {
 			return result.getData();
@@ -113,12 +132,14 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 
 		request.put("plaintext", Base64Utils.encodeToString(plaintext.getBytes()));
 
-		return (String) vaultOperations.write(String.format("%s/encrypt/%s", path, keyName), request).getData()
+		return (String) vaultOperations
+				.write(String.format("%s/encrypt/%s", path, keyName), request).getData()
 				.get("ciphertext");
 	}
 
 	@Override
-	public String encrypt(String keyName, byte[] plaintext, VaultTransitRequest transitRequest) {
+	public String encrypt(String keyName, byte[] plaintext,
+			VaultTransitContext transitRequest) {
 
 		Assert.hasText(keyName, "KeyName must not be empty");
 		Assert.notNull(plaintext, "Plain text must not be null");
@@ -131,7 +152,8 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 			applyTransitOptions(transitRequest, request);
 		}
 
-		return (String) vaultOperations.write(String.format("%s/encrypt/%s", path, keyName), request).getData()
+		return (String) vaultOperations
+				.write(String.format("%s/encrypt/%s", path, keyName), request).getData()
 				.get("ciphertext");
 	}
 
@@ -145,14 +167,16 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 
 		request.put("ciphertext", ciphertext);
 
-		String plaintext = (String) vaultOperations.write(String.format("%s/decrypt/%s", path, keyName), request).getData()
+		String plaintext = (String) vaultOperations
+				.write(String.format("%s/decrypt/%s", path, keyName), request).getData()
 				.get("plaintext");
 
 		return new String(Base64Utils.decodeFromString(plaintext));
 	}
 
 	@Override
-	public byte[] decrypt(String keyName, String ciphertext, VaultTransitRequest transitRequest) {
+	public byte[] decrypt(String keyName, String ciphertext,
+			VaultTransitContext transitRequest) {
 
 		Assert.hasText(keyName, "KeyName must not be empty");
 		Assert.hasText(keyName, "Cipher text must not be empty");
@@ -165,7 +189,8 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 			applyTransitOptions(transitRequest, request);
 		}
 
-		String plaintext = (String) vaultOperations.write(String.format("%s/decrypt/%s", path, keyName), request).getData()
+		String plaintext = (String) vaultOperations
+				.write(String.format("%s/decrypt/%s", path, keyName), request).getData()
 				.get("plaintext");
 
 		return Base64Utils.decodeFromString(plaintext);
@@ -180,12 +205,14 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 		Map<String, String> request = new LinkedHashMap<String, String>();
 		request.put("ciphertext", ciphertext);
 
-		return (String) vaultOperations.write(String.format("%s/rewrap/%s", path, keyName), request).getData()
+		return (String) vaultOperations
+				.write(String.format("%s/rewrap/%s", path, keyName), request).getData()
 				.get("ciphertext");
 	}
 
 	@Override
-	public String rewrap(String keyName, String ciphertext, VaultTransitRequest transitRequest) {
+	public String rewrap(String keyName, String ciphertext,
+			VaultTransitContext transitRequest) {
 
 		Assert.hasText(keyName, "KeyName must not be empty");
 		Assert.hasText(ciphertext, "Cipher text must not be empty");
@@ -198,18 +225,56 @@ public class VaultTransitTemplate implements VaultTransitOperations {
 			applyTransitOptions(transitRequest, request);
 		}
 
-		return (String) vaultOperations.write(String.format("%s/rewrap/%s", path, keyName), request).getData()
+		return (String) vaultOperations
+				.write(String.format("%s/rewrap/%s", path, keyName), request).getData()
 				.get("ciphertext");
 	}
 
-	private void applyTransitOptions(VaultTransitRequest transitRequest, Map<String, String> request) {
+	private void applyTransitOptions(VaultTransitContext transitRequest,
+			Map<String, String> request) {
 
 		if (transitRequest.getContext() != null) {
-			request.put("context", Base64Utils.encodeToString(transitRequest.getContext()));
+			request.put("context",
+					Base64Utils.encodeToString(transitRequest.getContext()));
 		}
 
 		if (transitRequest.getNonce() != null) {
 			request.put("nonce", Base64Utils.encodeToString(transitRequest.getNonce()));
 		}
+	}
+
+	@Data
+	static class VaultTransitKeyImpl implements VaultTransitKey {
+
+		@JsonProperty("cipher_mode")
+		private String cipherMode;
+
+		@JsonProperty("type")
+		private String type;
+
+		@JsonProperty("deletion_allowed")
+		private boolean deletionAllowed;
+
+		private boolean derived;
+
+		private Map<String, Long> keys;
+
+		@JsonProperty("latest_version")
+		private boolean latestVersion;
+
+		@JsonProperty("min_decryption_version")
+		private int minDecryptionVersion;
+
+		private String name;
+
+		public String getType() {
+
+			if (type != null) {
+				return type;
+			}
+
+			return cipherMode;
+		}
+
 	}
 }

@@ -17,6 +17,8 @@ package org.springframework.vault.support;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.util.Assert;
+
 /**
  * Transit backend key creation request options.
  * 
@@ -24,40 +26,118 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class VaultTransitKeyCreationRequest {
 
-	private Boolean derived;
+	private final Boolean derived;
 
-	@JsonProperty("convergent_encryption") private Boolean convergentEncryption;
+	@JsonProperty("type")
+	private final String type;
 
-	/**
-	 * Creates a new {@link VaultTransitKeyCreationRequest}.
-	 */
-	public VaultTransitKeyCreationRequest() {}
+	@JsonProperty("convergent_encryption")
+	private final Boolean convergentEncryption;
 
-	/**
-	 * Creates a new {@link VaultTransitKeyCreationRequest} and sets {@code derived} and {@code convergentEncryption}
-	 * properties.
-	 * 
-	 * @param derived
-	 * @param convergentEncryption
-	 */
-	public VaultTransitKeyCreationRequest(boolean derived, boolean convergentEncryption) {
+	private VaultTransitKeyCreationRequest(Boolean derived, String type,
+			Boolean convergentEncryption) {
 		this.derived = derived;
+		this.type = type;
 		this.convergentEncryption = convergentEncryption;
 	}
 
+	/**
+	 * @return a new {@link VaultTransitKeyCreationRequestBuilder}.
+	 */
+	public static VaultTransitKeyCreationRequestBuilder builder() {
+		return new VaultTransitKeyCreationRequestBuilder();
+	}
+
+	/**
+	 *
+	 * @return {@literal true} if key derivation MUST be used.
+	 */
 	public Boolean getDerived() {
 		return derived;
 	}
 
-	public void setDerived(Boolean derived) {
-		this.derived = derived;
-	}
-
+	/**
+	 *
+	 * @return {@literal true} if convergent encryption should be used (where the same
+	 * plaintext creates the same cipher text).
+	 */
 	public Boolean getConvergentEncryption() {
 		return convergentEncryption;
 	}
 
-	public void setConvergentEncryption(Boolean convergentEncryption) {
-		this.convergentEncryption = convergentEncryption;
+	/**
+	 *
+	 * @return the key type.
+	 */
+	public String getType() {
+		return type;
+	}
+
+	/**
+	 * Builder for {@link VaultTransitKeyCreationRequest}.
+	 */
+	public static class VaultTransitKeyCreationRequestBuilder {
+
+		private Boolean derived;
+		private String type = "aes256-gcm96";
+		private Boolean convergentEncryption;
+
+		VaultTransitKeyCreationRequestBuilder() {
+		}
+
+		/**
+		 * Configure key derivation.
+		 *
+		 * @param type the type of key to create, must not be empty or {@literal null}.
+		 * @return {@code this} {@link VaultTransitKeyCreationRequestBuilder}.
+		 */
+		public VaultTransitKeyCreationRequestBuilder type(String type) {
+
+			Assert.hasText(type, "Type must not be empty");
+
+			this.type = type;
+			return this;
+		}
+
+		/**
+		 * Configure key derivation.
+		 * 
+		 * @param derived {@literal true} if key derivation MUST be used. If enabled, all
+		 * encrypt/decrypt requests to this named key must provide a context which is used
+		 * for key derivation. Defaults to {@literal false}.
+		 * @return {@code this} {@link VaultTransitKeyCreationRequestBuilder}.
+		 */
+		public VaultTransitKeyCreationRequestBuilder derived(boolean derived) {
+
+			this.derived = derived;
+			return this;
+		}
+
+		/**
+		 * Configure convergent encryption where the same plaintext creates the same
+		 * ciphertext. Requires {@link #derived(boolean)} to be {@literal true}.
+		 *
+		 * @param convergentEncryption {@literal true} the same plaintext creates the same
+		 * ciphertext. Defaults to {@literal false}.
+		 * @return {@code this} {@link VaultTransitKeyCreationRequestBuilder}.
+		 */
+		public VaultTransitKeyCreationRequestBuilder convergentEncryption(
+				boolean convergentEncryption) {
+			this.convergentEncryption = convergentEncryption;
+			return this;
+		}
+
+		/**
+		 * Build a new {@link VaultTransitKeyCreationRequest} instance. Requires
+		 * {@link #type(String)} to be configured.
+		 *
+		 * @return a new {@link VaultTransitKeyCreationRequest}.
+		 */
+		public VaultTransitKeyCreationRequest build() {
+
+			Assert.hasText(type, "Type must not be empty");
+
+			return new VaultTransitKeyCreationRequest(derived, type, convergentEncryption);
+		}
 	}
 }

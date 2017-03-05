@@ -15,72 +15,40 @@
  */
 package org.springframework.vault.support;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
- * Value object to bind HTTP API responses for sys/health. Instances of this class are immutable.
+ * Vault health state.
  *
  * @author Stuart Ingram
  * @author Bill Koch
+ * @author Mark Paluch
  */
-public class VaultHealth {
+public interface VaultHealth {
 
 	/**
-	 * Reports whether the Vault instance is initialized.
+	 * @return {@literal true} if the Vault instance is initialized, otherwise
+	 * {@literal false}.
 	 */
-	private final boolean initialized;
+	boolean isInitialized();
 
 	/**
-	 * Reports whether the Vault instance is sealed.
+	 * @return {@literal true} if the Vault instance is sealed, otherwise {@literal false}
+	 * if the Vault instance is unsealed.
 	 */
-	private final boolean sealed;
+	boolean isSealed();
 
 	/**
-	 * Reports whether the Vault instance is in stand-by mode if running using High-Availability.
+	 * @return {@literal true} if the Vault instance is in standby mode, otherwise
+	 * {@literal false} if the Vault instance is active.
 	 */
-	private final boolean standby;
-
-	/**
-	 * The server time in seconds, UTC.
-	 */
-	private final int serverTimeUtc;
-
-	private VaultHealth(@JsonProperty("initialized") boolean initialized, @JsonProperty("sealed") boolean sealed,
-			@JsonProperty("standby") boolean standby, @JsonProperty("server_time_utc") int serverTimeUtc) {
-
-		this.initialized = initialized;
-		this.sealed = sealed;
-		this.standby = standby;
-		this.serverTimeUtc = serverTimeUtc;
-	}
-
-	/**
-	 * @return {@literal true} if the Vault instance is initialized, otherwise {@literal false}.
-	 */
-	public boolean isInitialized() {
-		return initialized;
-	}
-
-	/**
-	 * @return {@literal true} if the Vault instance is sealed, otherwise {@literal false} if the Vault instance is
-	 *         unsealed.
-	 */
-	public boolean isSealed() {
-		return sealed;
-	}
-
-	/**
-	 * @return {@literal true} if the Vault instance is in standby mode, otherwise {@literal false} if the Vault instance
-	 *         is active.
-	 */
-	public boolean isStandby() {
-		return standby;
-	}
+	boolean isStandby();
 
 	/**
 	 * @return the server time in seconds, UTC.
 	 */
-	public int getServerTimeUtc() {
-		return serverTimeUtc;
-	}
+	int getServerTimeUtc();
+
+	/**
+	 * @return the Vault version.
+	 */
+	String getVersion();
 }
